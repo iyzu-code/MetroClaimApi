@@ -1,10 +1,10 @@
 using MetroClaim.Api.Data;
+using MetroClaim.Api.Repositories;
 using MetroClaim.Api.Repositrories.Data;
 using MetroClaim.Api.Repositrories.Interfaces;
 using MetroClaim.Api.Services;
 using MetroClaim.Api.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Shiftly.Api.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 

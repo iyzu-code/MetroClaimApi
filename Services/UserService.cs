@@ -1,8 +1,8 @@
 using MetroClaim.Api.Dtos.User;
 using MetroClaim.Api.Models;
+using MetroClaim.Api.Repositories;
 using MetroClaim.Api.Repositrories.Interfaces;
 using MetroClaim.Api.Services.Interfaces;
-using Shiftly.Api.Repositories;
 
 namespace MetroClaim.Api.Services;
 
@@ -40,7 +40,7 @@ public class UserService : IUserService
 
     public async Task RegisterUserAsync(CreateUserRequestDto requestDto, CancellationToken cancellationToken)
     {
-        var existingUser = _userRepository.GetByEmailAsync(requestDto.Email, cancellationToken);
+        var existingUser = await _userRepository.GetByEmailAsync(requestDto.Email, cancellationToken);
         if (existingUser == null)
         {
             throw new ArgumentException("Email already registered");

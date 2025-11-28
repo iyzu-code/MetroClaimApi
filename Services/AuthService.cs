@@ -1,8 +1,7 @@
 using MetroClaim.Api.Dtos.Auth;
+using MetroClaim.Api.Repositories;
 using MetroClaim.Api.Repositrories.Interfaces;
 using MetroClaim.Api.Services.Interfaces;
-using Microsoft.IdentityModel.Tokens;
-using Shiftly.Api.Repositories;
 
 namespace MetroClaim.Api.Services;
 

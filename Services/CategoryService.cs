@@ -1,8 +1,8 @@
 using MetroClaim.Api.Dtos.Category;
 using MetroClaim.Api.Models;
+using MetroClaim.Api.Repositories;
 using MetroClaim.Api.Repositrories.Interfaces;
 using MetroClaim.Api.Services.Interfaces;
-using Shiftly.Api.Repositories;
 
 namespace MetroClaim.Api.Services;
 
