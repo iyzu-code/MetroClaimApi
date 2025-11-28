@@ -1,5 +1,10 @@
 using MetroClaim.Api.Data;
+using MetroClaim.Api.Repositrories.Data;
+using MetroClaim.Api.Repositrories.Interfaces;
+using MetroClaim.Api.Services;
+using MetroClaim.Api.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Shiftly.Api.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +12,19 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<MetroClaimDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IApprovalLogRepository, ApprovalLogRepository>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IDisbursementRepository, DisbursementRepository>();
+builder.Services.AddScoped<IReimbursementRepository, ReimbursementRepository>();
+
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
