@@ -26,7 +26,12 @@ public class AuthService : IAuthService
 
         if (user == null)
         {
-            throw new Exception("Email atau Password salah.");
+            throw new Exception("email atau Password salah.");
+        }
+
+        if (user.IsDeleted)
+        {
+            throw new ArgumentException("account deleted");
         }
 
         // 2. Cari Account berdasarkan UserId
@@ -36,19 +41,13 @@ public class AuthService : IAuthService
         // Validasi: Akun tidak ditemukan
         if (account == null)
         {
-             throw new Exception("Email atau Password salah.");
-        }
-
-        // 3. Validasi: Status Akun (Aktif/Tidak)
-        if (!account.IsActive)
-        {
-            throw new Exception("Akun Anda telah dinonaktifkan.");
+            throw new Exception("email atau Password salah.");
         }
 
         // 4. Pencocokan Password (Manual String Matching sesuai request)
         if (account.PasswordHash != requestDto.Password)
         {
-            throw new Exception("Email atau Password salah.");
+            throw new Exception("email atau Password salah.");
         }
 
         // 5. Login Berhasil

@@ -30,4 +30,19 @@ public class UserController : ControllerBase
         await _userService.RegisterUserAsync(requestDto, cancellationToken);
         return Ok(new ApiResponse<object>("user registered"));
     }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUserRequestDto request, CancellationToken cancellationToken)
+    {
+
+        await _userService.UpdateAsync(id, request, cancellationToken);
+        return Ok(new ApiResponse<object>("user updated"));
+    }
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+
+        await _userService.DeleteAsync(id, cancellationToken);
+        return Ok(new ApiResponse<object>("user deleted"));
+    }
 }

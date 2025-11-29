@@ -21,11 +21,33 @@ public class UserService : IUserService
         _accountRepository = accountRepository;
         _unitOfWork = unitOfWork;
     }
+
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
+    {
+        // 1. Ambil User
+        var user = await _userRepository.GetByIdAsync(id, cancellationToken);
+        if (user is null || user.IsDeleted)
+        {
+            throw new NullReferenceException("User not found");
+        }
+
+        // 2. Soft Delete User
+        user.IsDeleted = true;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _unitOfWork.CommitTransactionAsync(async () =>
+        {
+            // Update User jadi Deleted
+            await _userRepository.UpdateAsync(user);
+        }, cancellationToken);
+    }
+
     public async Task<IEnumerable<UserResponseDto>> GetAllUserAsync(CancellationToken cancellationToken)
     {
         var users = await _userRepository.GetAllAsync(cancellationToken);
+        var activeUsers = users.Where(u => !u.IsDeleted);
 
-        var userMap = users.Select(u => new UserResponseDto(
+        var userMap = activeUsers.Select(u => new UserResponseDto(
             u.Id,
             u.EmployeeId!,
             u.Fullname!,
@@ -72,6 +94,30 @@ public class UserService : IUserService
         {
             await _userRepository.CreateAsync(newUser, cancellationToken);
             await _accountRepository.CreateAsync(newAccount, cancellationToken);
+        }, cancellationToken);
+    }
+
+    public async Task UpdateAsync(Guid id, UpdateUserRequestDto requestDto, CancellationToken cancellationToken)
+    {
+        // 1. Ambil User
+        var user = await _userRepository.GetByIdAsync(id, cancellationToken);
+        if (user == null || user.IsDeleted)
+        {
+            throw new NullReferenceException("user not found");
+        }
+
+        // 2. Update Field
+        user.Fullname = requestDto.Fullname;
+        user.Email = requestDto.Email;
+        user.Role = requestDto.Role;
+        user.BankAccountNumber = requestDto.BankAccountNumber;
+        user.ManagerId = requestDto.ManagerId;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        // 3. Simpan
+        await _unitOfWork.CommitTransactionAsync(async () =>
+        {
+            await _userRepository.UpdateAsync(user);
         }, cancellationToken);
     }
 }
