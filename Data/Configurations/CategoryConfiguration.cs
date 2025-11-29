@@ -13,6 +13,7 @@ public class CategoryConfiguration : IEntityTypeConfiguration<Category>
 
         builder.Property(c => c.Id).HasColumnName("id");
         builder.Property(c => c.Name).HasColumnName("name");
+        builder.Property(c => c.IsDeleted).HasColumnName("is_deleted").HasDefaultValue(false);
         builder.Property(c => c.CreatedAt).HasColumnName("created_at");
         builder.Property(c => c.UpdatedAt).HasColumnName("updated_at");
     }

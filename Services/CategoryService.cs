@@ -38,21 +38,26 @@ public class CategoryService : ICategoryService
             throw new NullReferenceException("category not found");
         }
 
+        category.IsDeleted = true;
+        category.UpdatedAt = DateTime.UtcNow;
+
         await _unitOfWork.CommitTransactionAsync(async () =>
         {
-            await _categoryRepository.DeleteAsync(category);
+            await _categoryRepository.UpdateAsync(category);
         }, cancellationToken);
     }
 
     public async Task<IEnumerable<CategoryResponseDto>> GetAllAsync(CancellationToken cancellationToken)
     {
         var categories = await _categoryRepository.GetAllAsync(cancellationToken);
-        if (!categories.Any())
+        var activeCategories = categories.Where(c => !c.IsDeleted);
+
+        if (!activeCategories.Any())
         {
             throw new NullReferenceException("category not found");
         }
 
-        var categoryMap = categories.Select(c => new CategoryResponseDto(
+        var categoryMap = activeCategories.Select(c => new CategoryResponseDto(
             c.Id,
             c.Name!
         ));
