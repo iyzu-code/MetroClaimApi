@@ -35,7 +35,7 @@ public class CategoryService : ICategoryService
         var category = await _categoryRepository.GetByIdAsync(id, cancellationToken);
         if (category == null)
         {
-            throw new NullReferenceException("User not found");
+            throw new NullReferenceException("category not found");
         }
 
         await _unitOfWork.CommitTransactionAsync(async () =>
@@ -49,7 +49,7 @@ public class CategoryService : ICategoryService
         var categories = await _categoryRepository.GetAllAsync(cancellationToken);
         if (!categories.Any())
         {
-            throw new NullReferenceException("Category not found");
+            throw new NullReferenceException("category not found");
         }
 
         var categoryMap = categories.Select(c => new CategoryResponseDto(
@@ -65,7 +65,7 @@ public class CategoryService : ICategoryService
         var category = await _categoryRepository.GetByIdAsync(id, cancellationToken);
         if (category == null)
         {
-            throw new NullReferenceException("Category not found");
+            throw new NullReferenceException("category not found");
         }
 
         var categoryMap = new CategoryResponseDto(
@@ -81,7 +81,7 @@ public class CategoryService : ICategoryService
         var category = await _categoryRepository.GetByIdAsync(id, cancellationToken);
         if (category is null)
         {
-            throw new NullReferenceException("Category not found");
+            throw new NullReferenceException("category not found");
         }
 
         category.Name = requestDto.Name;

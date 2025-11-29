@@ -1,5 +1,6 @@
 using MetroClaim.Api.Dtos.User;
 using MetroClaim.Api.Services.Interfaces;
+using MetroClaim.Api.Utilities;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MetroClaim.Api.Controllers;
@@ -19,18 +20,14 @@ public class UserController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAllUser(CancellationToken cancellationToken)
     {
-        var user = await _userService.GetAllUserAsync(cancellationToken);
-        if (!user.Any())
-        {
-            return NotFound("User Not Found");
-        }
-        return Ok(user);
+        var users = await _userService.GetAllUserAsync(cancellationToken);
+        return Ok(new ApiResponse<IEnumerable<UserResponseDto>>(users));
     }
 
     [HttpPost]
     public async Task<IActionResult> RegisterUser(CreateUserRequestDto requestDto, CancellationToken cancellationToken)
     {
         await _userService.RegisterUserAsync(requestDto, cancellationToken);
-        return Ok();
+        return Ok(new ApiResponse<object>("user registered"));
     }
 }

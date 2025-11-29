@@ -32,7 +32,7 @@ public class UserService : IUserService
             u.Email!,
             u.Role,
             u.BankAccountNumber,
-            null
+            u.ManagerId
         ));
 
         return userMap;
@@ -41,7 +41,7 @@ public class UserService : IUserService
     public async Task RegisterUserAsync(CreateUserRequestDto requestDto, CancellationToken cancellationToken)
     {
         var existingUser = await _userRepository.GetByEmailAsync(requestDto.Email, cancellationToken);
-        if (existingUser == null)
+        if (existingUser is not null)
         {
             throw new ArgumentException("Email already registered");
         }
@@ -56,6 +56,7 @@ public class UserService : IUserService
             Email = requestDto.Email,
             Role = requestDto.Role,
             BankAccountNumber = requestDto.BankAccountNumber,
+            ManagerId = requestDto.ManagerId,
         };
 
         var newAccount = new Account

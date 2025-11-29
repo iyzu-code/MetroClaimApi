@@ -1,5 +1,6 @@
 using MetroClaim.Api.Dtos.Auth;
 using MetroClaim.Api.Services.Interfaces;
+using MetroClaim.Api.Utilities;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MetroClaim.Api.Controllers;
@@ -19,6 +20,6 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login(LoginRequestDto requestDto, CancellationToken cancellationToken)
     {
         await _authService.LoginAsync(requestDto, cancellationToken);
-        return Ok("Authorized");
+        return Ok(new ApiResponse<object>("authorized"));
     }
 }
