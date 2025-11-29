@@ -18,6 +18,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Role).HasColumnName("role");
         builder.Property(u => u.ManagerId).HasColumnName("manager_id");
         builder.Property(u => u.BankAccountNumber).HasColumnName("bank_account_number");
+        builder.Property(u => u.IsDeleted).HasColumnName("is_deleted").HasDefaultValue(false);
         builder.Property(u => u.CreatedAt).HasColumnName("created_at");
         builder.Property(u => u.UpdatedAt).HasColumnName("updated_at");
 

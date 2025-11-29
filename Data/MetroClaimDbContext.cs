@@ -1,3 +1,4 @@
+using MetroClaim.Api.Data.Seeds;
 using MetroClaim.Api.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,5 +20,9 @@ public class MetroClaimDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(MetroClaimDbContext).Assembly);
+
+        modelBuilder.Entity<User>().HasData(UserAndAccountSeeder.GetDefaultUsers());
+        modelBuilder.Entity<Account>().HasData(UserAndAccountSeeder.GetDefaultAccounts());
+        modelBuilder.Entity<Category>().HasData(CategorySeeder.GetDefaultCategories());
     }
 }

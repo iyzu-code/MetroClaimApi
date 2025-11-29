@@ -31,9 +31,9 @@ public class Repository<T> : IRepository<T> where T : class
         return await _context.Set<T>().ToListAsync(cancellationToken);
     }
 
-    public Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        return await _context.Set<T>().FindAsync(id, cancellationToken);
     }
 
     public async Task UpdateAsync(T t)

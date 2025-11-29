@@ -1,6 +1,6 @@
 using MetroClaim.Api.Data;
 
-namespace Shiftly.Api.Repositories;
+namespace MetroClaim.Api.Repositories;
 
 public interface IUnitOfWork
 {
