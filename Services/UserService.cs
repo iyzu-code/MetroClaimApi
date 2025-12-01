@@ -68,6 +68,11 @@ public class UserService : IUserService
             throw new ArgumentException("Email already registered");
         }
 
+        if (!(requestDto.Password == requestDto.PasswordConfirmation))
+        {
+            throw new ArgumentException("registered password not match");
+        }
+
         var newUserId = Guid.NewGuid();
 
         var newUser = new User
