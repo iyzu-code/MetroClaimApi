@@ -7,6 +7,7 @@ public record CreateUserRequestDto(
     string Fullname,
     string Email,
     string Password,
+    string PasswordConfirmation,
     UserRole Role,
     string? BankAccountNumber,
     Guid? ManagerId
