@@ -27,14 +27,12 @@ public class FinanceService : IFinanceService
 
     public async Task<IEnumerable<FinanceTaskDto>> GetPendingApprovalsAsync(CancellationToken cancellationToken)
     {
-        // Cari yang statusnya 'Manager_Approved'
         var items = await _reimbursementRepository.GetByStatusAsync(ReimbursementStatus.Manager_Approved, cancellationToken);
         return MapToDto(items);
     }
 
     public async Task<IEnumerable<FinanceTaskDto>> GetPendingPaymentsAsync(CancellationToken cancellationToken)
     {
-        // Cari yang statusnya 'Finance_Approved' (Siap Bayar)
         var items = await _reimbursementRepository.GetByStatusAsync(ReimbursementStatus.Finance_Approved, cancellationToken);
         return MapToDto(items);
     }
@@ -42,17 +40,14 @@ public class FinanceService : IFinanceService
     public async Task ApproveAsync(FinanceApprovalRequestDto requestDto, CancellationToken cancellationToken)
     {
         var reimbursement = await _reimbursementRepository.GetByIdAsync(requestDto.ReimbursementId, cancellationToken);
-        if (reimbursement == null) throw new KeyNotFoundException("Reimbursement not found");
+        if (reimbursement == null) throw new NullReferenceException("Reimbursement not found");
 
-        // Validasi: Harus sudah diapprove Manager
         if (reimbursement.Status != ReimbursementStatus.Manager_Approved)
-            throw new InvalidOperationException($"Invalid status: {reimbursement.Status}. Expecting Manager_Approved.");
+            throw new ArgumentException($"Invalid status: {reimbursement.Status}. Expecting Manager_Approved.");
 
-        // Update Status
         reimbursement.Status = ReimbursementStatus.Finance_Approved;
         reimbursement.UpdatedAt = DateTime.UtcNow;
 
-        // Log
         var log = CreateLog(reimbursement.Id, requestDto.FinanceId, ReimbursementStatus.Finance_Approved, requestDto.Comments ?? "Finance Verified");
 
         await _unitOfWork.CommitTransactionAsync(async () =>
@@ -65,12 +60,11 @@ public class FinanceService : IFinanceService
     public async Task RejectAsync(FinanceApprovalRequestDto requestDto, CancellationToken cancellationToken)
     {
         var reimbursement = await _reimbursementRepository.GetByIdAsync(requestDto.ReimbursementId, cancellationToken);
-        if (reimbursement == null) throw new KeyNotFoundException("Reimbursement not found");
+        if (reimbursement == null) throw new NullReferenceException("Reimbursement not found");
 
-        // Finance bisa menolak baik saat Approval maupun saat mau Bayar
         if (reimbursement.Status != ReimbursementStatus.Manager_Approved && 
             reimbursement.Status != ReimbursementStatus.Finance_Approved)
-            throw new InvalidOperationException($"Invalid status: {reimbursement.Status}.");
+            throw new ArgumentException($"Invalid status: {reimbursement.Status}.");
 
         if (string.IsNullOrWhiteSpace(requestDto.Comments))
             throw new ArgumentException("Rejection reason is required.");
@@ -91,17 +85,14 @@ public class FinanceService : IFinanceService
     public async Task PayAsync(PaymentExecutionDto requestDto, CancellationToken cancellationToken)
     {
         var reimbursement = await _reimbursementRepository.GetByIdAsync(requestDto.ReimbursementId, cancellationToken);
-        if (reimbursement == null) throw new KeyNotFoundException("Reimbursement not found");
+        if (reimbursement == null) throw new NullReferenceException("Reimbursement not found");
 
-        // Validasi: Harus Finance_Approved
         if (reimbursement.Status != ReimbursementStatus.Finance_Approved)
-            throw new InvalidOperationException($"Invalid status: {reimbursement.Status}. Expecting Finance_Approved.");
+            throw new ArgumentException($"Invalid status: {reimbursement.Status}. Expecting Finance_Approved.");
 
-        // 1. Update Status Reimbursement ke PAID (Final)
         reimbursement.Status = ReimbursementStatus.Paid;
         reimbursement.UpdatedAt = DateTime.UtcNow;
 
-        // 2. Buat Record Disbursement
         var disbursement = new Disbursement
         {
             Id = Guid.NewGuid(),
@@ -113,10 +104,8 @@ public class FinanceService : IFinanceService
             UpdatedAt = DateTime.UtcNow
         };
 
-        // 3. Buat Log
         var log = CreateLog(reimbursement.Id, requestDto.FinanceId, ReimbursementStatus.Paid, $"Paid via Transfer. Ref: {requestDto.ReferenceNumber}");
 
-        // 4. Commit 3 Tabel Sekaligus
         await _unitOfWork.CommitTransactionAsync(async () =>
         {
             await _reimbursementRepository.UpdateAsync(reimbursement);

@@ -20,13 +20,11 @@ public class AuthService : IAuthService
 
     public async Task<string> LoginAsync(LoginRequestDto requestDto, CancellationToken cancellationToken)
     {
-        // 1. Cari User berdasarkan Email menggunakan Repository
-        // Saya asumsikan di IUserRepository ada method GetByEmailAsync atau GetAsync
         var user = await _userRepository.GetByEmailAsync(requestDto.Email, cancellationToken);
 
-        if (user == null)
+        if (user is null)
         {
-            throw new Exception("email atau Password salah.");
+            throw new NullReferenceException("Email atau Password salah.");
         }
 
         if (user.IsDeleted)
@@ -34,23 +32,18 @@ public class AuthService : IAuthService
             throw new ArgumentException("account deleted");
         }
 
-        // 2. Cari Account berdasarkan UserId
-        // Karena relasi terpisah, kita ambil data akunnya lewat AccountRepository
         var account = await _accountRepository.GetByUserIdAsync(user.Id, cancellationToken);
 
-        // Validasi: Akun tidak ditemukan
-        if (account == null)
+        if (account is null)
         {
-            throw new Exception("email atau Password salah.");
+            throw new NullReferenceException("Email atau Password salah.");
         }
 
-        // 4. Pencocokan Password (Manual String Matching sesuai request)
         if (account.PasswordHash != requestDto.Password)
         {
-            throw new Exception("email atau Password salah.");
+            throw new ArgumentException("Email atau Password salah.");
         }
 
-        // 5. Login Berhasil
-        return $"Login Berhasil! Selamat datang, {user.Fullname} ({user.Role})";
+        return $"Authorized {user.Fullname} ({user.Role})";
     }
 }
