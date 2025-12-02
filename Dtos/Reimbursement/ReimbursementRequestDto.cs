@@ -1,5 +1,3 @@
-using System;
-
 namespace MetroClaim.Api.Dtos.Reimbursement;
 
 public record ReimbursementRequestDto(

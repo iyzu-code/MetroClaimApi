@@ -3,6 +3,7 @@ using MetroClaim.Api.Models;
 using MetroClaim.Api.Repositories;
 using MetroClaim.Api.Repositrories.Interfaces;
 using MetroClaim.Api.Services.Interfaces;
+using MetroClaim.Api.Utilities;
 
 namespace MetroClaim.Api.Services;
 
@@ -10,31 +11,35 @@ public class FinanceService : IFinanceService
 {
     private readonly IReimbursementRepository _reimbursementRepository;
     private readonly IApprovalLogRepository _approvalLogRepository;
-    private readonly IDisbursementRepository _disbursementRepository; // Repo baru
+    private readonly IDisbursementRepository _disbursementRepository;
+    private readonly IUserRepository _userRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IEmailHandler _emailHandler;
 
     public FinanceService(
         IReimbursementRepository reimbursementRepository,
         IApprovalLogRepository approvalLogRepository,
         IDisbursementRepository disbursementRepository,
-        IUnitOfWork unitOfWork)
+        IUserRepository userRepository,
+        IUnitOfWork unitOfWork,
+        IEmailHandler emailHandler)
     {
         _reimbursementRepository = reimbursementRepository;
         _approvalLogRepository = approvalLogRepository;
         _disbursementRepository = disbursementRepository;
+        _userRepository = userRepository;
         _unitOfWork = unitOfWork;
+        _emailHandler = emailHandler;
     }
 
     public async Task<IEnumerable<FinanceTaskDto>> GetPendingApprovalsAsync(CancellationToken cancellationToken)
     {
-        // Cari yang statusnya 'Manager_Approved'
         var items = await _reimbursementRepository.GetByStatusAsync(ReimbursementStatus.Manager_Approved, cancellationToken);
         return MapToDto(items);
     }
 
     public async Task<IEnumerable<FinanceTaskDto>> GetPendingPaymentsAsync(CancellationToken cancellationToken)
     {
-        // Cari yang statusnya 'Finance_Approved' (Siap Bayar)
         var items = await _reimbursementRepository.GetByStatusAsync(ReimbursementStatus.Finance_Approved, cancellationToken);
         return MapToDto(items);
     }
@@ -42,17 +47,14 @@ public class FinanceService : IFinanceService
     public async Task ApproveAsync(FinanceApprovalRequestDto requestDto, CancellationToken cancellationToken)
     {
         var reimbursement = await _reimbursementRepository.GetByIdAsync(requestDto.ReimbursementId, cancellationToken);
-        if (reimbursement == null) throw new KeyNotFoundException("Reimbursement not found");
+        if (reimbursement == null) throw new NullReferenceException("Reimbursement not found");
 
-        // Validasi: Harus sudah diapprove Manager
         if (reimbursement.Status != ReimbursementStatus.Manager_Approved)
-            throw new InvalidOperationException($"Invalid status: {reimbursement.Status}. Expecting Manager_Approved.");
+            throw new ArgumentException($"Invalid status: {reimbursement.Status}. Expecting Manager_Approved.");
 
-        // Update Status
         reimbursement.Status = ReimbursementStatus.Finance_Approved;
         reimbursement.UpdatedAt = DateTime.UtcNow;
 
-        // Log
         var log = CreateLog(reimbursement.Id, requestDto.FinanceId, ReimbursementStatus.Finance_Approved, requestDto.Comments ?? "Finance Verified");
 
         await _unitOfWork.CommitTransactionAsync(async () =>
@@ -65,12 +67,11 @@ public class FinanceService : IFinanceService
     public async Task RejectAsync(FinanceApprovalRequestDto requestDto, CancellationToken cancellationToken)
     {
         var reimbursement = await _reimbursementRepository.GetByIdAsync(requestDto.ReimbursementId, cancellationToken);
-        if (reimbursement == null) throw new KeyNotFoundException("Reimbursement not found");
+        if (reimbursement == null) throw new NullReferenceException("Reimbursement not found");
 
-        // Finance bisa menolak baik saat Approval maupun saat mau Bayar
-        if (reimbursement.Status != ReimbursementStatus.Manager_Approved && 
+        if (reimbursement.Status != ReimbursementStatus.Manager_Approved &&
             reimbursement.Status != ReimbursementStatus.Finance_Approved)
-            throw new InvalidOperationException($"Invalid status: {reimbursement.Status}.");
+            throw new ArgumentException($"Invalid status: {reimbursement.Status}.");
 
         if (string.IsNullOrWhiteSpace(requestDto.Comments))
             throw new ArgumentException("Rejection reason is required.");
@@ -90,18 +91,15 @@ public class FinanceService : IFinanceService
 
     public async Task PayAsync(PaymentExecutionDto requestDto, CancellationToken cancellationToken)
     {
-        var reimbursement = await _reimbursementRepository.GetByIdAsync(requestDto.ReimbursementId, cancellationToken);
-        if (reimbursement == null) throw new KeyNotFoundException("Reimbursement not found");
+        var reimbursement = await _reimbursementRepository.GetByIdWithDetailsAsync(requestDto.ReimbursementId, cancellationToken);
+        if (reimbursement == null) throw new NullReferenceException("Reimbursement not found");
 
-        // Validasi: Harus Finance_Approved
         if (reimbursement.Status != ReimbursementStatus.Finance_Approved)
-            throw new InvalidOperationException($"Invalid status: {reimbursement.Status}. Expecting Finance_Approved.");
+            throw new ArgumentException($"Invalid status: {reimbursement.Status}. Expecting Finance_Approved.");
 
-        // 1. Update Status Reimbursement ke PAID (Final)
         reimbursement.Status = ReimbursementStatus.Paid;
         reimbursement.UpdatedAt = DateTime.UtcNow;
 
-        // 2. Buat Record Disbursement
         var disbursement = new Disbursement
         {
             Id = Guid.NewGuid(),
@@ -113,16 +111,57 @@ public class FinanceService : IFinanceService
             UpdatedAt = DateTime.UtcNow
         };
 
-        // 3. Buat Log
         var log = CreateLog(reimbursement.Id, requestDto.FinanceId, ReimbursementStatus.Paid, $"Paid via Transfer. Ref: {requestDto.ReferenceNumber}");
 
-        // 4. Commit 3 Tabel Sekaligus
+        // --- SETUP EMAIL ---
+
+        var formattedAmount = requestDto.AmountPaid.ToString("C", new System.Globalization.CultureInfo("id-ID"));
+
+        var emailSubject = $"[ METRO CLAIM ] Reimbursement Paid - {reimbursement.Title}";
+
+        var emailBody = $@"
+            <p>Halo {reimbursement.User!.Fullname},</p>
+
+            <p>
+            Pengajuan reimbursement Anda telah diproses dan 
+            <strong>DIBAYARKAN</strong> oleh tim Finance.
+            </p>
+
+            <p>
+            <strong>Detail Pembayaran:</strong><br>
+            ------------------------------------------------<br>
+            <strong>Judul Pengajuan :</strong> {reimbursement.Title}<br>
+            <strong>Jumlah Diterima :</strong> {formattedAmount}<br>
+            <strong>No. Referensi   :</strong> {requestDto.ReferenceNumber}<br>
+            <strong>Tanggal Proses  :</strong> {DateTime.Now:dd MMMM yyyy}<br>
+            ------------------------------------------------
+            </p>
+
+            <p>
+            Pencairan dana telah diproses ke rekening terdaftar Anda.  
+            Silakan cek mutasi rekening secara berkala.
+            </p>
+
+            <p>
+            Terima kasih,<br>
+            <strong>Finance Dept MetroClaim</strong>
+            </p>
+            ";
+
+        var email = new EmailDto(
+            To: reimbursement.User.Email!,
+            Subject: emailSubject,
+            Body: emailBody
+        );
+
         await _unitOfWork.CommitTransactionAsync(async () =>
         {
             await _reimbursementRepository.UpdateAsync(reimbursement);
             await _disbursementRepository.CreateAsync(disbursement, cancellationToken);
             await _approvalLogRepository.CreateAsync(log, cancellationToken);
+            await _emailHandler.SendEmailAsync(email);
         }, cancellationToken);
+
     }
 
     // --- Helper Methods ---

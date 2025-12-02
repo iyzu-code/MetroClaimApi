@@ -1,5 +1,3 @@
-using System;
-
 namespace MetroClaim.Api.Dtos.Finance;
 
 public record FinanceTaskDto(

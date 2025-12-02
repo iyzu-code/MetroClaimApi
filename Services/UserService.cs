@@ -3,6 +3,7 @@ using MetroClaim.Api.Models;
 using MetroClaim.Api.Repositories;
 using MetroClaim.Api.Repositrories.Interfaces;
 using MetroClaim.Api.Services.Interfaces;
+using MetroClaim.Api.Utilities;
 
 namespace MetroClaim.Api.Services;
 
@@ -11,15 +12,18 @@ public class UserService : IUserService
     private readonly IUserRepository _userRepository;
     private readonly IAccountRepository _accountRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IHashHandler _hashHandler;
 
     public UserService(
         IUserRepository userRepository,
         IAccountRepository accountRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IHashHandler hashHandler)
     {
         _userRepository = userRepository;
         _accountRepository = accountRepository;
         _unitOfWork = unitOfWork;
+        _hashHandler = hashHandler;
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
@@ -86,11 +90,13 @@ public class UserService : IUserService
             ManagerId = requestDto.ManagerId,
         };
 
+        var encryptedPassword = _hashHandler.GenerateHash(requestDto.Password);
+
         var newAccount = new Account
         {
             Id = Guid.NewGuid(),
             UserId = newUserId,
-            PasswordHash = requestDto.Password,
+            PasswordHash = encryptedPassword,
             IsActive = true,
             IsUsed = false,
         };

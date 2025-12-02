@@ -1,3 +1,5 @@
 namespace MetroClaim.Api.Dtos.Category;
 
-public record CategoryRequestDto(string Name);
+public record CategoryRequestDto(
+    string Name
+);

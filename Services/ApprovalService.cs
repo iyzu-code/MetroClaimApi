@@ -44,26 +44,20 @@ public class ApprovalService : IApprovalService
 
     public async Task ApproveByManagerAsync(ApprovalRequestDto requestDto, CancellationToken cancellationToken)
     {
-        // 1. Ambil data Reimbursement lengkap dengan User info
         var reimbursement = await _reimbursementRepository.GetByIdWithDetailsAsync(requestDto.ReimbursementId, cancellationToken);
 
-        if (reimbursement == null)
-            throw new KeyNotFoundException("Reimbursement not found");
+        if (reimbursement is null)
+            throw new NullReferenceException("Reimbursement not found");
 
-        // 2. Validasi Status: Harus 'Submitted'
         if (reimbursement.Status != ReimbursementStatus.Submitted)
-            throw new InvalidOperationException($"Cannot approve. Current status is {reimbursement.Status}");
+            throw new ArgumentException($"Cannot approve. Current status is {reimbursement.Status}");
 
-        // 3. Validasi Otoritas: Apakah ManagerId cocok dengan data user?
-        // Note: requestDto.ManagerId adalah user yang sedang login
         if (reimbursement.User!.ManagerId != requestDto.ManagerId)
             throw new UnauthorizedAccessException("You are not the manager of this employee.");
 
-        // 4. Update Status Utama
         reimbursement.Status = ReimbursementStatus.Manager_Approved;
         reimbursement.UpdatedAt = DateTime.UtcNow;
 
-        // 5. Siapkan Log
         var log = new ApprovalLog
         {
             Id = Guid.NewGuid(),
@@ -75,7 +69,6 @@ public class ApprovalService : IApprovalService
             UpdatedAt = DateTime.UtcNow
         };
 
-        // 6. Commit Transaksi
         await _unitOfWork.CommitTransactionAsync(async () =>
         {
             await _reimbursementRepository.UpdateAsync(reimbursement);
@@ -89,11 +82,11 @@ public class ApprovalService : IApprovalService
         var reimbursement = await _reimbursementRepository.GetByIdWithDetailsAsync(requestDto.ReimbursementId, cancellationToken);
 
         if (reimbursement == null)
-            throw new KeyNotFoundException("Reimbursement not found");
+            throw new NullReferenceException("Reimbursement not found");
 
         // 2. Validasi Status
         if (reimbursement.Status != ReimbursementStatus.Submitted)
-            throw new InvalidOperationException($"Cannot reject. Current status is {reimbursement.Status}");
+            throw new ArgumentException($"Cannot reject. Current status is {reimbursement.Status}");
 
         // 3. Validasi Otoritas
         if (reimbursement.User!.ManagerId != requestDto.ManagerId)
