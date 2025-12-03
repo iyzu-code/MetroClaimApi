@@ -1,12 +1,14 @@
 using MetroClaim.Api.Dtos.Approval;
 using MetroClaim.Api.Services.Interfaces;
 using MetroClaim.Api.Utilities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MetroClaim.Api.Controllers;
 
 [Route("api/approvals")]
 [ApiController]
+[Authorize(Roles = "manager")]
 public class ApprovalController : ControllerBase
 {
     private readonly IApprovalService _approvalService;

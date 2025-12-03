@@ -1,12 +1,15 @@
 using MetroClaim.Api.Dtos.Reimbursement;
 using MetroClaim.Api.Services.Interfaces;
 using MetroClaim.Api.Utilities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MetroClaim.Api.Controllers;
 
 [Route("api/reimbursements")]
 [ApiController]
+[Authorize]
+// [Authorize(Roles = "employee, manager, finance")]
 public class ReimbursementController : ControllerBase
 {
     private readonly IReimbursementService _reimbursementService;
@@ -25,6 +28,7 @@ public class ReimbursementController : ControllerBase
         return Ok(new ApiResponse<object>("reimbursement created"));
     }
 
+    [AllowAnonymous]
     [HttpGet("me")]
     public async Task<ActionResult<IEnumerable<ReimbursementResponseDto>>> GetMyReimbursementHistory([FromQuery] Guid userId, CancellationToken cancellationToken)
     {

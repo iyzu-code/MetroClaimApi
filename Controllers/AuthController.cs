@@ -19,7 +19,10 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequestDto requestDto, CancellationToken cancellationToken)
     {
-        await _authService.LoginAsync(requestDto, cancellationToken);
-        return Ok(new ApiResponse<object>("authorized"));
+        var login = await _authService.LoginAsync(requestDto, cancellationToken);
+        return Ok(new ApiResponse<object>(new
+        {
+            Token = login
+        }));
     }
 }

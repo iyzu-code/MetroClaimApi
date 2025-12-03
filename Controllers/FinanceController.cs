@@ -1,12 +1,14 @@
 using MetroClaim.Api.Dtos.Finance;
 using MetroClaim.Api.Services.Interfaces;
 using MetroClaim.Api.Utilities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MetroClaim.Api.Controllers;
 
 [Route("api/finance")]
 [ApiController]
+[Authorize(Roles = "finance")]
 public class FinanceController : ControllerBase
 {
     private readonly IFinanceService _financeService;

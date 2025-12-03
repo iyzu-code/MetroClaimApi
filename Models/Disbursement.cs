@@ -4,7 +4,7 @@ public class Disbursement
 {
     public Guid Id { get; set; }
     public Guid ReimbursementId { get; set; }
-    public Guid? ProcessedByUserId { get; set; }
+    public Guid? ProcessedByUserId { get; set; } //finance
     public decimal AmountPaid { get; set; }
     public string? ReferenceNumber { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

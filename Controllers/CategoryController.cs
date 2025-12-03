@@ -1,12 +1,14 @@
 using MetroClaim.Api.Dtos.Category;
 using MetroClaim.Api.Services.Interfaces;
 using MetroClaim.Api.Utilities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MetroClaim.Api.Controllers;
 
 [ApiController]
 [Route("api/category")]
+[Authorize(Roles = "admin")]
 
 public class CategoryController : ControllerBase
 {
